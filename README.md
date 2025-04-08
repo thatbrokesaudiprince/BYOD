@@ -4,7 +4,7 @@
 - [Features](#features)
 - [Usage](#usage)
 - [Documentation](#documentation)
-- [What Happens if](#what-happens-if)
+- [What Happens if...](#what-happens-if)
 
 ## Introduction
 
@@ -16,9 +16,9 @@ BYOD aims to both streamline data integration to provide a comprehensive situati
 
 ### Start the Application
 
-Run the following command to build and start the containers:  
+Run the following command to build and start the containers:
 
-```docker-compose up```
+`docker-compose up`
 
 ## Workflow Diagram
 

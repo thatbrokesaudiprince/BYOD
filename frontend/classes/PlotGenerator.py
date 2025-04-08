@@ -26,14 +26,14 @@ class PlotGenerator:
         # Count the occurrences of each unique value
         column_counts = split_values.value_counts().reset_index(name="counts")
         column_counts.columns = [column_name, "counts"]
-
+        title = column_name.replace("_", " ")
         # Create the pie chart using Plotly
         fig = px.pie(
             column_counts,
             names=column_name,
             color_discrete_sequence=px.colors.qualitative.Set3,
             values="counts",
-            title=f"{column_name} Distribution",
+            title=f"{title} Distribution",
             hole=0.3,
             labels={column_name: column_name, "counts": "Count"},
             color=column_name,
@@ -50,14 +50,14 @@ class PlotGenerator:
         """
         # Group the data by the specified column and count occurrences
         column_counts = df.groupby(column_name).size().reset_index(name="counts")
-
+        title = column_name.replace("_", " ").capitalize()
         # Create the pie chart using Plotly
         fig = px.pie(
             column_counts,
             names=column_name,
             color_discrete_sequence=px.colors.qualitative.Set3,
             values="counts",
-            title=f"{column_name} Distribution",
+            title=f"{title} Distribution",
             hole=0.3,
             labels={column_name: column_name, "counts": "Count"},
             color=column_name,
@@ -95,16 +95,15 @@ class PlotGenerator:
 
         # Group by the new period and count the number of rows in each period
         count_by_period = df.groupby("period").size().reset_index(name="row_count")
-
         # Plot the result using Plotly
         fig = px.line(
             count_by_period,
             x="period",
             y="row_count",
-            title=f"Mentions by {freq.capitalize()}",
+            title=f"{freq.capitalize()} Activity",
             labels={
                 "period": f"Period ({freq.capitalize()})",
-                "row_count": "Mentions",
+                "row_count": "Activity",
             },
         )
         return fig

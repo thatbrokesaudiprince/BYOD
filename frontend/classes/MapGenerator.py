@@ -205,7 +205,7 @@ class MapGenerator:
             self._generate_cellex_markers_(cellex_data=cellex_data)
 
         # Create a template group to fill in
-        groups = {"ACLED": [], "GDELT": [], "CELLEX": []}
+        groups = {"ACLED EVENT TYPE": [], "GDELT": [], "CELLEX": []}
 
         layers = [
             self.ACLED_BATTLE_layer,
@@ -222,14 +222,14 @@ class MapGenerator:
             if len(layer._children.keys()) > 0:
                 self.map.add_child(layer)
                 if "ACLED" in layer.layer_name:
-                    groups["ACLED"].append(layer)
+                    groups["ACLED EVENT TYPE"].append(layer)
                 if "GDELT" in layer.layer_name:
                     groups["GDELT"].append(layer)
                 if "CELLEX" in layer.layer_name:
                     groups["CELLEX"].append(layer)
 
         # Add LayerControl to the map after all layers are added
-        folium.LayerControl(collapsed=False).add_to(self.map)
+        # folium.LayerControl(collapsed=False).add_to(self.map)
 
         # Add GroupedLayerControl to filter the layers on the map (layer toggle)
         GroupedLayerControl(

@@ -8,7 +8,10 @@ from utils import *
 
 # Set page layout
 st.set_page_config(layout="wide", page_title="Build Your Own Dashboard")
-
+st.title("Welcome to Build Your Own Dashboard🖥️!")
+st.subheader(
+    "A CEM|ACLED|GDELT Analysis platform developed by Analysts for Analysts📈💰📊"
+)
 # Initialize session state variables if they don't exist
 initialize_variables()
 
@@ -56,15 +59,15 @@ if len(st.session_state.ACLED_FILES) > 0:
             st.session_state.selected_acled_actors = st.multiselect(
                 label="Select Actor(s)", options=sorted(st.session_state.acled_actors)
             )
-            st.session_state.selected_event_types = st.multiselect(
+            st.session_state.selected_acled_event_types = st.multiselect(
                 label="Select Event(s)",
                 options=sorted(st.session_state.acled_event_types),
             )
-            st.session_state.selected_sub_event_types = st.multiselect(
+            st.session_state.selected_acled_sub_event_types = st.multiselect(
                 label="Select Sub Event(s)",
                 options=sorted(st.session_state.acled_sub_event_types),
             )
-            st.session_state.selected_disorder_types = st.multiselect(
+            st.session_state.selected_acled_disorder_types = st.multiselect(
                 label="Select Disorder Type(s)",
                 options=sorted(st.session_state.acled_disorder_types),
             )

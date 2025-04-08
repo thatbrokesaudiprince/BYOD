@@ -175,10 +175,8 @@ class ACLEDProcessor:
 
         if sub_event_types:
             mask &= self.data["sub_event_type"].isin(sub_event_types)
-        print(self.data[mask])
 
         if start_date:
-            print("START", start_date)
             mask &= self.data["event_date"] >= start_date
 
         if end_date:

@@ -4,6 +4,32 @@ import pandas as pd
 import streamlit as st
 import itertools
 import numpy as np
+import datetime
+
+
+def safe_convert_to_datetime(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
+    """
+    Converts a dataframe column containing dates in string format like '7-Feb-25'
+    or '30-Sept-24' into datetime objects. Handles errors gracefully.
+
+    Parameters:
+    df (pd.DataFrame): The input DataFrame.
+    column_name (str): The name of the column containing date strings.
+
+    Returns:
+    pd.DataFrame: A DataFrame with the specified column converted to datetime objects.
+    """
+    # Attempt to convert to datetime
+    try:
+        # First attempt using '%d-%b-%y' for typical format
+        df[column_name] = pd.to_datetime(
+            df[column_name], format="%d-%b-%y", errors="raise"
+        )
+    except ValueError:
+        # Handle edge cases where month abbreviation might be longer, or the day format might be inconsistent
+        df[column_name] = pd.to_datetime(df[column_name], errors="coerce")
+
+    return df
 
 
 class ACLEDProcessor:
@@ -67,7 +93,7 @@ class ACLEDProcessor:
         if not all_acled_data.empty:
             all_acled_data.sort_values(by="event_date", ascending=True, inplace=True)
         # return all data
-        return all_acled_data
+        return safe_convert_to_datetime(all_acled_data, "event_date")
 
     def _get_columns_(self) -> list:
         """Returns a list of all column names"""
@@ -121,26 +147,42 @@ class ACLEDProcessor:
         disorder_types: list = None,
         event_types: list = None,
         sub_event_types: list = None,
+        start_date=None,
+        end_date=None,
     ) -> pd.DataFrame:
         """Return a subset of the original dataframe which matches all the filters"""
 
-        # Defaulting to class instance methods if no lists are provided
-        actors = actors or self._get_actors_()
-        disorder_types = disorder_types or self._get_disorder_types_()
-        event_types = event_types or self._get_event_types_()
-        sub_event_types = sub_event_types or self._get_sub_event_types_()
-
-        # Apply filtering using .isin() and ensure correct logical precedence with parentheses
         if self.data.empty:
             return pd.DataFrame()
-        return self.data[
-            (
+
+        # Create a boolean mask initialized to True for all rows
+        mask = pd.Series(True, index=self.data.index)
+
+        # Apply filters only if the corresponding list is provided
+        if actors:
+            mask &= (
                 self.data["actor1"].isin(actors)
                 | self.data["assoc_actor_1"].isin(actors)
                 | self.data["actor2"].isin(actors)
                 | self.data["assoc_actor_2"].isin(actors)
             )
-            & self.data["event_type"].isin(event_types)
-            & self.data["disorder_type"].isin(disorder_types)
-            & self.data["sub_event_type"].isin(sub_event_types)
-        ]
+
+        if event_types:
+            mask &= self.data["event_type"].isin(event_types)
+
+        if disorder_types:
+            mask &= self.data["disorder_type"].isin(disorder_types)
+
+        if sub_event_types:
+            mask &= self.data["sub_event_type"].isin(sub_event_types)
+        print(self.data[mask])
+
+        if start_date:
+            print("START", start_date)
+            mask &= self.data["event_date"] >= start_date
+
+        if end_date:
+            print("END", end_date)
+            mask &= self.data["event_date"] <= end_date
+        print(self.data[mask])
+        return self.data[mask]

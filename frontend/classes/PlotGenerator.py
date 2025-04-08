@@ -10,6 +10,36 @@ class PlotGenerator:
     def __init__(self):
         return
 
+    def plot_gdelt_pie_chart(self, df: pd.DataFrame, column_name: str) -> px.pie:
+        """
+        Generates a pie chart from a DataFrame based on the specified column.
+
+        This version handles rows containing comma-separated values and counts occurrences of each item.
+
+        Parameters:
+        df (pd.DataFrame): The input DataFrame.
+        column_name (str): The name of the column for which the pie chart should be generated.
+        """
+        # Split the values in the column by commas, strip any extra whitespace, and flatten the list
+        split_values = df[column_name].str.split(",").explode().str.strip()
+
+        # Count the occurrences of each unique value
+        column_counts = split_values.value_counts().reset_index(name="counts")
+        column_counts.columns = [column_name, "counts"]
+
+        # Create the pie chart using Plotly
+        fig = px.pie(
+            column_counts,
+            names=column_name,
+            color_discrete_sequence=px.colors.qualitative.Set3,
+            values="counts",
+            title=f"{column_name} Distribution",
+            hole=0.3,
+            labels={column_name: column_name, "counts": "Count"},
+            color=column_name,
+        )
+        return fig
+
     def plot_pie_chart(self, df: pd.DataFrame, column_name: str) -> px.pie:
         """
         Generates a pie chart from a DataFrame based on the specified column.
@@ -33,8 +63,6 @@ class PlotGenerator:
             color=column_name,
         )
         return fig
-
-        # st.plotly_chart(fig=fig)
 
     def plot_time_series(self, df, datetime_column, freq="monthly") -> px.line:
         """
@@ -81,16 +109,13 @@ class PlotGenerator:
         )
         return fig
 
-    def _plot_timeline_(self, df: pd.DataFrame, datetime_column: str) -> dict:
+    def _plot_acled_timeline_(self, df: pd.DataFrame, datetime_column: str):
         """
-        Generates a timeline plot with event types and notes.
+        Generates and display a timeline plot with event types and notes.
 
         Parameters:
         df (pd.DataFrame): The input DataFrame.
         datetime_column (str): The name of the datetime column in the DataFrame.
-
-        Returns:
-        dict: A Plotly timeline object (can be displayed with plotly.express).
         """
         # Ensure the datetime column is in datetime format
         df[datetime_column] = pd.to_datetime(df[datetime_column], errors="coerce")
@@ -149,38 +174,86 @@ class PlotGenerator:
                 final_timeline["events"].append(event_dict)
 
         # Call the timeline function to render the timeline
-        timeline(final_timeline, height=800)
+        timeline(final_timeline, height=600)
 
-    def plot_notes_per_event_type_per_day(self, df: pd.DataFrame) -> px.bar:
+    def _plot_gdelt_timeline_(self, df: pd.DataFrame, datetime_column: str):
         """
-        Plots a bar chart showing the number of notes per event type per day.
+        Generates a timeline plot with event types and notes, handling duplicated headlines by combining URLs.
 
         Parameters:
         df (pd.DataFrame): The input DataFrame.
+        datetime_column (str): The name of the datetime column in the DataFrame.
 
         Returns:
-        px.bar: A Plotly bar chart displaying the count of notes per event type per day.
+        dict: A Plotly timeline object (can be displayed with plotly.express).
         """
         # Ensure the datetime column is in datetime format
-        df["event_date"] = pd.to_datetime(df["event_date"], errors="coerce")
+        df[datetime_column] = pd.to_datetime(df[datetime_column], errors="coerce")
 
-        # Group by event_date and event_type, and count the number of notes per group
-        note_counts = (
-            df.groupby(["event_date", "event_type"])
-            .size()
-            .reset_index(name="note_count")
-        )
+        # Placeholder for the final structure
+        final_timeline = {
+            "title": {
+                "text": {
+                    "headline": "Event Timeline",
+                }
+            },
+            "events": [],
+        }
 
-        # Create a bar chart with Plotly
-        fig = px.bar(
-            note_counts,
-            x="event_date",
-            y="note_count",
-            color="event_type",
-            title="Number of Notes per Event Type per Day",
-            labels={"event_date": "Event Date", "note_count": "Number of Notes"},
-            barmode="stack",  # Stacked bar chart to show notes for each event type
-        )
-        return fig
-        # Display the plot
-        # st.plotly_chart(fig)
+        # Iterate through unique event dates to prepare event data for the timeline
+        for date in df[
+            datetime_column
+        ].dt.date.unique():  # Use .dt.date to work with only the date part
+            # Filter the dataframe for the current date
+            subset = df[df[datetime_column].dt.date == date]
+
+            # Group by "Headline" and aggregate links into a list
+            grouped = (
+                subset.groupby("Headline")
+                .agg(
+                    links=("link", lambda x: list(x))  # Aggregate the links into a list
+                )
+                .reset_index()
+            )
+
+            date_notes = []
+
+            # Iterate through the grouped headlines and links
+            for idx, row in grouped.iterrows():
+                headline = row["Headline"]
+                links = row["links"]
+
+                # Create the note with a combined list of URLs for each headline
+                links_html = "<br>".join(
+                    [f"<a href='{link}' target='_blank'>{link}</a>" for link in links]
+                )
+                note = f"<b>{headline}</b><br>{links_html}"
+
+                # Append the note to date_notes (avoiding duplicates)
+                if note not in date_notes:
+                    date_notes.append(note)
+
+            # Create a dictionary for the event
+            event_dict = {
+                "media": {
+                    "url": "",  # You can replace with appropriate media URL
+                    "credit": "",  # Optionally add credits
+                },
+                "start_date": {
+                    "year": date.year,
+                    "month": date.month,
+                    "day": date.day,
+                },
+                "text": {
+                    "headline": f"News on {date}",
+                    "text": "<br>".join(
+                        date_notes
+                    ),  # Join notes with <br> for line breaks
+                },
+            }
+
+            # Add the event to the final timeline
+            final_timeline["events"].append(event_dict)
+
+        # Call the timeline function to render the timeline
+        timeline(final_timeline, height=600)
